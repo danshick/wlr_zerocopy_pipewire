@@ -178,13 +178,14 @@ static void pw_on_event(void *data, uint64_t expirations){
   uint64_t i;
   for(i=0; i<1; i++){//i<ctx->frame_set.num_objects; i++){
     d[i].type = SPA_DATA_DmaBuf;
-	  d[i].flags = SPA_DATA_FLAG_READABLE;
+	  d[i].flags = SPA_DATA_FLAG_READABLE | SPA_DATA_FLAG_DYNAMIC;
 	  d[i].fd = ctx->frame_set.frame_objects[i]->fd;
 		d[i].mapoffset = 0;
 		d[i].maxsize = ctx->frame_set.frame_objects[i]->size;
 		d[i].chunk->size = ctx->frame_set.frame_objects[i]->size;
 		d[i].chunk->stride = ctx->frame_set.frame_objects[i]->stride;
 		d[i].chunk->offset = ctx->frame_set.frame_objects[i]->offset;
+		d[i].chunk->flags = 0;
 
 		logger("************** \n");
 		logger("pointer: %p\n", d[i].data);
@@ -233,7 +234,7 @@ static void pw_on_stream_add_buffer(void *data, struct pw_buffer *buffer){
 	d = buf->datas;
 
 	d[0].type = SPA_DATA_DmaBuf;
-  d[0].flags = SPA_DATA_FLAG_READABLE;
+  d[0].flags = SPA_DATA_FLAG_READABLE | SPA_DATA_FLAG_DYNAMIC;
 	d[0].fd = ctx->frame_set.frame_objects[0]->fd;
 	d[0].mapoffset = 0;
 	d[0].maxsize = ctx->frame_set.frame_objects[0]->size;
@@ -323,8 +324,9 @@ void *pw_start(void *data){
 		SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
 		SPA_FORMAT_mediaType,       SPA_POD_Id(SPA_MEDIA_TYPE_video),
 		SPA_FORMAT_mediaSubtype,    SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
-		SPA_FORMAT_VIDEO_format,    SPA_POD_Id(SPA_VIDEO_FORMAT_BGRA),
-		
+		SPA_FORMAT_VIDEO_format,    SPA_POD_Id(SPA_VIDEO_FORMAT_BGRA), 
+		//SPA_FORMAT_VIDEO_modifier,  SPA_POD_Long(72057594037927940),
+
 		// eventually, we can detect the format provided by WLR and convert it to SPA with the function in utils
 		// SPA_POD_CHOICE_ENUM_Id(SPA_VIDEO_FORMAT_NV12, SPA_VIDEO_FORMAT_BGRA, SPA_VIDEO_FORMAT_BGRx, SPA_VIDEO_FORMAT_RGBA, SPA_VIDEO_FORMAT_RGBx, SPA_VIDEO_FORMAT_ABGR, SPA_VIDEO_FORMAT_xBGR, SPA_VIDEO_FORMAT_ARGB, SPA_VIDEO_FORMAT_xRGB)
 		
@@ -389,6 +391,7 @@ static void wlr_frame_start(void *data, struct zwlr_export_dmabuf_frame_v1 *fram
   struct screencast_context *ctx = data;
 	pthread_mutex_lock(&ctx->lock);
   logger("wlr frame_start\n");
+	logger("modifier: %lx\n", ((uint64_t)mod_high << 32) | mod_low);
 
   ctx->frame = frame;
   ctx->frame_set.frame_objects = malloc(sizeof(*ctx->frame_set.frame_objects) * (int)num_objects);
